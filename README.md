@@ -6,6 +6,13 @@ Requires [SuperWoW.dll](https://github.com/balakethelock/SuperWoW) and `VanillaU
 
 ![](./ex1.png)
 
+---
+Features:
+* Indication of whether you're in real melee range.
+* Indication of whether you're facing the mob you're targeting.
+* Mob facing indicator to position behind a mob in a melee dogpile.
+* Raid markers show at enemy feet so they can be seenm on large mobs.
+
 ___
 Options `/crf` :
 * `enable` : Enable or disable addon
