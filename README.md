@@ -3,6 +3,9 @@ Indicators for easing melee combat
 ---
 Requires [SuperWoW.dll](https://github.com/balakethelock/SuperWoW) and `VanillaUtils.dll`  
 `VanillaUtils.dll` is [provided in the release zip](https://github.com/MarcelineVQ/CombatRangeFinder/releases), load it in the same manner you use to load SuperWoW.
+
+![](./ex1.png)
+
 ___
 Options `/crf` :
 * enable : Enable or disable addon
