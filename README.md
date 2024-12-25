@@ -11,7 +11,7 @@ Features:
 * Indication of whether you're in real melee range.
 * Indication of whether you're facing the mob you're targeting.
 * Mob facing indicator to position behind a mob in a melee dogpile.
-* Raid markers show at enemy feet so they can be seenm on large mobs.
+* Raid markers show at enemy feet so they can be seen on large mobs.
 
 ___
 Options `/crf` :
