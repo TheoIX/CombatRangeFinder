@@ -8,10 +8,10 @@ Requires [SuperWoW.dll](https://github.com/balakethelock/SuperWoW) and `VanillaU
 
 ___
 Options `/crf` :
-* enable : Enable or disable addon
-* arrow : Show indicator arrow for (attackable) target
-* any : When arrow is enabled, show for non-attackable targets too
-* markers : Show raid markers at enemy feet
+* `enable` : Enable or disable addon
+* `arrow` : Show indicator arrow for (attackable) target
+* `any` : When arrow is enabled, show for non-attackable targets too
+* `markers` : Show raid markers at enemy feet
 
 ___
 * Made by and for Weird Vibes of Turtle Wow  
