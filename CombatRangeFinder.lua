@@ -492,7 +492,8 @@ end
 
 function crfFrame:UpdateRaidMarkers()
   if not self.raidMarkers then return end
-  
+
+  local mark_table = { "mark1", "mark2", "mark3", "mark4", "mark5", "mark6", "mark7", "mark8" }
   local px, py, pz = UnitPosition("player") -- Player position
 
   -- Scaling configuration
@@ -501,32 +502,28 @@ function crfFrame:UpdateRaidMarkers()
   local minScale = 0.5   -- Minimum scale (50% of original size)
 
   for mark, marker in ipairs(self.raidMarkers) do
-    local unit = "mark"..mark
-    if UnitExists(unit) and CRFDB.settings.markers then
-      if not UnitIsDead(unit) then
-        local tx, ty, tz = UnitPosition(unit) -- Target position
-        marker:SetPosition(tx, ty, tz)
+    local _,unit = UnitExists(mark_table[mark])
+    if unit and CRFDB.settings.markers and UnitIsVisible(unit) and not UnitIsDead(unit) then
+      local tx, ty, tz = UnitPosition(unit) -- Target position
+      marker:SetPosition(tx, ty, tz)
 
-        local distance = calculateDistance(px, py, pz, tx, ty, tz)
+      local distance = calculateDistance(px, py, pz, tx, ty, tz)
 
-        -- Smooth scaling: normalize distance to a scale factor
-        local scale = 1
-        if distance > minDistance then
-          scale = 1 - ((distance - minDistance) / (maxDistance - minDistance)) * (1 - minScale)
-          scale = math.max(minScale, scale) -- Clamp to minScale
-        end
+      -- Smooth scaling: normalize distance to a scale factor
+      local scale = 1
+      if distance > minDistance then
+        scale = 1 - ((distance - minDistance) / (maxDistance - minDistance)) * (1 - minScale)
+        scale = math.max(minScale, scale) -- Clamp to minScale
+      end
 
-        -- Apply the scaled size
-        marker.icon:SetWidth(marker.icon.original_width * scale)
-        marker.icon:SetHeight(marker.icon.original_height * scale)
+      -- Apply the scaled size
+      marker.icon:SetWidth(marker.icon.original_width * scale)
+      marker.icon:SetHeight(marker.icon.original_height * scale)
 
-        if distance > 40 then
-          marker.icon:Hide()
-        else
-          marker.icon:Show()
-        end
-      else
+      if distance > 40 then
         marker.icon:Hide()
+      else
+        marker.icon:Show()
       end
     else
       marker.icon:Hide()
@@ -869,7 +866,7 @@ function crfFrame_OnUpdate()
       -- local px, py = UnitPosition("player") -- or UnitPosition("player")
       -- local tx, ty = UnitPosition("target")
       
-      local obj_distance = calculateDistance(px,py,0,tx,ty,0)
+      local obj_distance = calculateDistance(px,py,pz,tx,ty,tz)
       local facing_limit = 61 * (math.pi/180) -- 60 degrees
 
       local player_facing = UnitFacing("player") -- or UnitFacing("player")
