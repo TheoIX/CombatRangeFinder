@@ -245,96 +245,96 @@ end
 
 -- Instants to use to check for in-melee range
 local instants = {
-	["Backstab"] = 1,
-	["Sinister Strike"] = 1,
-	["Kick"] = 1,
-	["Expose Armor"] = 1,
-	["Eviscerate"] = 1,
-	["Rupture"] = 1,
-	["Kidney Shot"] = 1,
-	["Garrote"] = 1,
-	["Ambush"] = 1,
-	["Cheap Shot"] = 1,
-	["Gouge"] = 1,
-	["Feint"] = 1,
-	["Ghosly Strike"] = 1,
-	["Hemorrhage"] = 1,
-	-- ["Riposte"] = 1, -- maybe
+  ["Backstab"] = 1,
+  ["Sinister Strike"] = 1,
+  ["Kick"] = 1,
+  ["Expose Armor"] = 1,
+  ["Eviscerate"] = 1,
+  ["Rupture"] = 1,
+  ["Kidney Shot"] = 1,
+  ["Garrote"] = 1,
+  ["Ambush"] = 1,
+  ["Cheap Shot"] = 1,
+  ["Gouge"] = 1,
+  ["Feint"] = 1,
+  ["Ghosly Strike"] = 1,
+  ["Hemorrhage"] = 1,
+  -- ["Riposte"] = 1, -- maybe
 
-	["Hamstring"] = 1,
-	["Sunder Armor"] = 1,
-	["Bloodthirst"] = 1,
-	["Mortal Strike"] = 1,
-	["Shield Slam"] = 1,
-	["Overpower"] = 1,
-	["Revenge"] = 1,
-	["Pummel"] = 1,
-	["Shield Bash"] = 1,
-	["Disarm"] = 1,
-	["Execute"] = 1,
-	["Taunt"] = 1,
-	["Mocking Blow"] = 1,
-	["Slam"] = 1,
-	-- ["Decisive Strike"] = 1, -- gone
-	["Rend"] = 1,
+  ["Hamstring"] = 1,
+  ["Sunder Armor"] = 1,
+  ["Bloodthirst"] = 1,
+  ["Mortal Strike"] = 1,
+  ["Shield Slam"] = 1,
+  ["Overpower"] = 1,
+  ["Revenge"] = 1,
+  ["Pummel"] = 1,
+  ["Shield Bash"] = 1,
+  ["Disarm"] = 1,
+  ["Execute"] = 1,
+  ["Taunt"] = 1,
+  ["Mocking Blow"] = 1,
+  ["Slam"] = 1,
+  -- ["Decisive Strike"] = 1, -- gone
+  ["Rend"] = 1,
 
-	["Crusader Strike"] = 1,
-	["Holy Strike"] = 1,
+  ["Crusader Strike"] = 1,
+  ["Holy Strike"] = 1,
 
-	["Storm Strike"] = 1,
+  ["Storm Strike"] = 1,
 
-	["Savage Bite"] = 1,
-	["Growl"] = 1,
-	["Bash"] = 1,
-	["Swipe"] = 1,
-	["Claw"] = 1,
-	["Rip"] = 1,
-	["Ferocious Bite"] = 1,
-	["Shred"] = 1,
-	["Rake"] = 1,
-	["Cower"] = 1,
-	["Ravage"] = 1,
-	["Pounce"] = 1,
+  ["Savage Bite"] = 1,
+  ["Growl"] = 1,
+  ["Bash"] = 1,
+  ["Swipe"] = 1,
+  ["Claw"] = 1,
+  ["Rip"] = 1,
+  ["Ferocious Bite"] = 1,
+  ["Shred"] = 1,
+  ["Rake"] = 1,
+  ["Cower"] = 1,
+  ["Ravage"] = 1,
+  ["Pounce"] = 1,
 
-	["Wing Clip"] = 1,
-	["Disengage"] = 1,
-	["Carve"] = 1, -- twow
-	["Counterattack"] = 1, -- hunter, also war on twow
+  ["Wing Clip"] = 1,
+  ["Disengage"] = 1,
+  ["Carve"] = 1, -- twow
+  ["Counterattack"] = 1, -- hunter, also war on twow
 }
 
 -- store one of your instant actions to check for melee range
 local range_check_slot = nil
 local function Check_Actions(slot)
-	if slot then
-		local name,actionType,identifier = GetActionText(slot);
+  if slot then
+    local name,actionType,identifier = GetActionText(slot);
 
-		if actionType and identifier and actionType == "SPELL" then
-			local name,rank,texture = SpellInfo(identifier)
-			if instants[name] then
-				range_check_slot = i
-			end
-		end
-		return
-	end
+    if actionType and identifier and actionType == "SPELL" then
+      local name,rank,texture = SpellInfo(identifier)
+      if instants[name] then
+        range_check_slot = i
+        return -- done
+      end
+    end
+  end
 
-	for i=1,120 do
-		local name,actionType,identifier = GetActionText(i);
-		-- if ActionHasRange(i) then
-		-- 	print(SpellInfo(identifier))
-		-- end
+  for i=1,120 do
+    local name,actionType,identifier = GetActionText(i);
+    -- if ActionHasRange(i) then
+    --   print(SpellInfo(identifier))
+    -- end
 
-		if actionType and identifier and actionType == "SPELL" then
-			local name,rank,texture = SpellInfo(identifier)
-			if instants[name] then
-				range_check_slot = i
-				-- print(range_check_slot)
-				-- print(name)
-				return
-			end
-		end
-	end
-	-- no hits?
-	range_check_slot = nil
+    if actionType and identifier and actionType == "SPELL" then
+      local name,rank,texture = SpellInfo(identifier)
+      if instants[name] then
+        range_check_slot = i
+        -- print(range_check_slot)
+        -- print(name)
+        return
+      end
+    end
+  end
+  -- no hits?
+  range_check_slot = nil
 end
 
 crfFrame:SetScript("OnEvent", function ()
@@ -344,13 +344,13 @@ end)
 crfFrame:RegisterEvent("ADDON_LOADED")
 
 local function GetRestofMessage(args)
-	if args[2] then
-		local name = args[2]
-		for i = 3, table.getn(args) do
-			name = name .. " " .. args[i]
-		end
-		return name
-	end
+  if args[2] then
+    local name = args[2]
+    for i = 3, table.getn(args) do
+      name = name .. " " .. args[i]
+    end
+    return name
+  end
 end
 
 local commands = {
@@ -475,8 +475,8 @@ end
 function CreateRaidMarker(markerIndex)
   local marker = DotPool:GetDot()
   SetRaidMarkerTexture(marker.icon, markerIndex)
-  marker.icon.original_width = 24
-  marker.icon.original_height = 24
+  marker.icon.original_width = 32
+  marker.icon.original_height = 32
   marker.icon:SetWidth(marker.icon.original_width)
   marker.icon:SetHeight(marker.icon.original_height)
   marker.text:SetText("")
@@ -500,7 +500,6 @@ function crfFrame:UpdateRaidMarkers()
   local maxDistance = 40 -- Distance at which markers are smallest
   local minDistance = 5  -- Distance at which markers are full size
   local minScale = 0.5   -- Minimum scale (50% of original size)
-
   for mark, marker in ipairs(self.raidMarkers) do
     local _,unit = UnitExists(mark_table[mark])
     if unit and CRFDB.settings.markers and UnitIsVisible(unit) and not UnitIsDead(unit) then
@@ -710,6 +709,11 @@ function crfFrame:UpdateCamera()
   local px, py = UnitPosition("player") --or UnitPosition("player")
   local dy,dx = camera.y - py,camera.x - px
   camera.x, camera.y, camera.z = CameraPosition()
+  if not camera.x then
+    camera.x = 0
+    camera.y = 0
+    camera.z = 0
+  end
 
   -- Only update yaw if it's actually changed. Accounts for some odd motion glitches
   local deltaThreshold = 0.04
