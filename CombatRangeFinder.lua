@@ -41,6 +41,11 @@ function RotateTexture(texture, angle)
   )
 end
 
+local textures = {
+  in_range = "Interface\\Addons\\CombatRangeFinder\\line2",
+  out_range = "Interface\\Addons\\CombatRangeFinder\\line",
+}
+
 function ScaleTexture(texture, scaleX, scaleY)
   -- Adjust scaling to make higher values increase size
   scaleX = 1 / scaleX
@@ -603,8 +608,14 @@ function crfFrame:ACTIONBAR_SLOT_CHANGED(slot)
 end
 
 local function IsInRange(distance)
-  return (range_check_slot and (IsActionInRange(range_check_slot) == 1))
-    or (not range_check_slot and (distance <= (UnitRace("player") == "Tauren" and 6.5 or 5)))
+  local melee_range = (UnitRace("player") == "Tauren") and 6.5 or 5
+  local can_attack = UnitCanAttack("player", "target")
+
+  if range_check_slot and can_attack then
+      return IsActionInRange(range_check_slot) == 1
+  end
+
+  return distance <= melee_range
 end
 
 function crfFrame:PLAYER_ENTERING_WORLD()
@@ -889,7 +900,7 @@ function crfFrame_OnUpdate()
       local distance = math.sqrt(dx * dx + dy * dy)
       local midX, midY = (px + tx) / 2, (py + ty) / 2
 
-      playerdot1.icon:SetTexture("Interface\\Addons\\CombatRangeFinder\\line.tga")
+      -- playerdot1.icon:SetTexture("Interface\\Addons\\CombatRangeFinder\\line.tga")
       playerdot1.icon:SetWidth(distance)
       playerdot1.icon:SetHeight(distance)
 
@@ -908,7 +919,11 @@ function crfFrame_OnUpdate()
       end
 
       -- colors
-      if IsInRange(obj_distance) then -- <= (UnitRace("player") == "Tauren" and 6 or 4.5) then
+      if IsInRange(obj_distance) then
+        if playerdot1.icon:GetTexture() ~= textures.in_range then
+          -- texture swapping is heavy, might just wanna load both and toggle visibility
+          playerdot1.icon:SetTexture(textures.in_range)
+        end
       -- if obj_distance <= 10 then
       -- if obj_distance <= 10 then
         playerdot1.icon:SetVertexColor(0,1,0,alpha)
@@ -919,6 +934,9 @@ function crfFrame_OnUpdate()
         end
       else
         playerdot1.icon:SetVertexColor(1,0,0,alpha)
+        if playerdot1.icon:GetTexture() ~= textures.out_range then
+          playerdot1.icon:SetTexture(textures.out_range)
+        end
       end
         
       playerdot1.icon:SetPoint("CENTER",UIParent,"CENTER",midX,midY)
