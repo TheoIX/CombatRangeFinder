@@ -359,10 +359,11 @@ local function GetRestofMessage(args)
 end
 
 local commands = {
-  { name = "enable",  default = true,  desc = "Enable or disable addon" },
-  { name = "arrow",   default = true,  desc = "Show indicator arrow for (attackable) target" },
-  { name = "any",     default = false, desc = "When arrow is enabled, show for non-attackable targets too" },
-  { name = "markers", default = true,  desc = "Show raid markers at enemy feet" },
+  { name = "enable",      default = true,  desc = "Enable or disable addon" },
+  { name = "arrow",       default = true,  desc = "Show indicator arrow for (attackable) target" },
+  { name = "any",         default = false, desc = "When arrow is enabled, show for non-attackable targets too" },
+  { name = "markers",     default = true,  desc = "Show raid markers at enemy feet" },
+  { name = "largearrow", default = true,  desc = "Use a larger arrow for enemies who are in range" },
 }
 
 local function OffOn(on)
@@ -920,17 +921,17 @@ function crfFrame_OnUpdate()
 
       -- colors
       if IsInRange(obj_distance) then
-        if playerdot1.icon:GetTexture() ~= textures.in_range then
+        if CRFDB.settings.largearrow and playerdot1.icon:GetTexture() ~= textures.in_range then
           -- texture swapping is heavy, might just wanna load both and toggle visibility
           playerdot1.icon:SetTexture(textures.in_range)
         end
-      -- if obj_distance <= 10 then
-      -- if obj_distance <= 10 then
-        playerdot1.icon:SetVertexColor(0,1,0,alpha)
+
         if not is_facing then
           playerdot1.icon:SetVertexColor(1,0.5,0,alpha)
         elseif is_behind then
           playerdot1.icon:SetVertexColor(0.25,0.75,0.65,alpha)
+        else
+          playerdot1.icon:SetVertexColor(0,1,0,alpha)
         end
       else
         playerdot1.icon:SetVertexColor(1,0,0,alpha)
