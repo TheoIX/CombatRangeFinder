@@ -1,4 +1,4 @@
-# Combat Range Finder 1.1.0
+# Combat Range Finder 1.2.0
 Indicators for easing melee combat
 ---
 Requires [SuperWoW.dll](https://github.com/balakethelock/SuperWoW) and `VanillaUtils.dll`  
@@ -21,6 +21,7 @@ Options `/crf` :
 * `largearrow` : Use a larger arrow for enemies who are in range
 * `any` : When arrow is enabled, show for non-attackable targets too
 * `markers` : Show raid markers at enemy feet
+* `markerssize` : Size of markers (default 48)
 
 ___
 * Made by and for Weird Vibes of Turtle Wow  

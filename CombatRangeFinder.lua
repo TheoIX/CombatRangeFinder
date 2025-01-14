@@ -363,7 +363,8 @@ local commands = {
   { name = "arrow",       default = true,  desc = "Show indicator arrow for (attackable) target" },
   { name = "any",         default = false, desc = "When arrow is enabled, show for non-attackable targets too" },
   { name = "markers",     default = true,  desc = "Show raid markers at enemy feet" },
-  { name = "largearrow", default = true,  desc = "Use a larger arrow for enemies who are in range" },
+  { name = "markerssize", default = 48,    desc = "Size of markers (default 48)" },
+  { name = "largearrow",  default = true,  desc = "Use a larger arrow for enemies who are in range" },
 }
 
 local function OffOn(on)
@@ -374,7 +375,11 @@ end
 local function ShowCommands()
   crf_print("|cff77ff00Combat Range Finder:|r")
   for _,data in ipairs(commands) do
-    crf_print(data.name .. " - " .. OffOn(CRFDB.settings[data.name]) .. " - " .. data.desc)
+    if type(data.default) == "boolean" then
+      crf_print(data.name .. " - " .. OffOn(CRFDB.settings[data.name]) .. " - " .. data.desc)
+    else
+      crf_print(data.name .. " - |cff00cccc" .. CRFDB.settings[data.name] .. "|r - " .. data.desc)
+    end
   end
 end
 
@@ -385,11 +390,17 @@ function MakeSlash()
       table.insert(args, word)
     end
     local cmd = string.lower(args[1] or "")
+    local num = tonumber(args[2])
     
     for _,data in ipairs(commands) do
       if cmd == data.name then
-        CRFDB.settings[data.name] = not CRFDB.settings[data.name]
-        crf_print("|cff77ff00CRF:|r " .. data.name .. " - " .. OffOn(CRFDB.settings[data.name]))
+        if type(data.default) == "boolean" then
+          CRFDB.settings[data.name] = not CRFDB.settings[data.name]
+          crf_print("|cff77ff00CRF:|r " .. data.name .. " - " .. OffOn(CRFDB.settings[data.name]))
+        elseif num then
+          CRFDB.settings[data.name] = num
+          crf_print("|cff77ff00CRF:|r " .. data.name .. " - |cff00cccc" .. num .. "|r")
+        end
         return
       end
     end
@@ -481,8 +492,8 @@ end
 function CreateRaidMarker(markerIndex)
   local marker = DotPool:GetDot()
   SetRaidMarkerTexture(marker.icon, markerIndex)
-  marker.icon.original_width = 32
-  marker.icon.original_height = 32
+  marker.icon.original_width = 48
+  marker.icon.original_height = 48
   marker.icon:SetWidth(marker.icon.original_width)
   marker.icon:SetHeight(marker.icon.original_height)
   marker.text:SetText("")
@@ -511,6 +522,8 @@ function crfFrame:UpdateRaidMarkers()
     if unit and CRFDB.settings.markers and UnitIsVisible(unit) and not UnitIsDead(unit) then
       local tx, ty, tz = UnitPosition(unit) -- Target position
       marker:SetPosition(tx, ty, tz)
+      marker.icon.original_width = CRFDB.settings.markerssize
+      marker.icon.original_height = CRFDB.settings.markerssize
 
       local distance = calculateDistance(px, py, pz, tx, ty, tz)
 
