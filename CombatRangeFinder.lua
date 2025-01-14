@@ -944,10 +944,10 @@ function crfFrame_OnUpdate()
         elseif is_behind then
           playerdot1.icon:SetVertexColor(0.25,0.75,0.65,alpha)
         else
-          playerdot1.icon:SetVertexColor(0,1,0,alpha)
+          playerdot1.icon:SetVertexColor(0.1,0.85,0.15,alpha)
         end
       else
-        playerdot1.icon:SetVertexColor(1,0,0,alpha)
+        playerdot1.icon:SetVertexColor(0.95,0.1,0.1,alpha)
         if playerdot1.icon:GetTexture() ~= textures.out_range then
           playerdot1.icon:SetTexture(textures.out_range)
         end
