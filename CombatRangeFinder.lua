@@ -5,6 +5,8 @@
 local has_vanillautils = pcall(UnitXP, "nop", "nop") and true or false
 local has_superwow = SetAutoloot and true or false
 
+local updates_per_sec = 60
+
 if not (has_vanillautils and has_superwow) then
   StaticPopupDialogs["NO_SWOW_VU"] = {
     text = "|cff77ff00Combat Range Finder|r requires the SuperWoW and VanillaUtils dlls to operate.",
@@ -159,6 +161,8 @@ function DotPool:GetDot()
 
   -- If no available dot, create a new one
   local dot = CreateFrame("Frame", nil, UIParent)
+  dot:SetFrameStrata("BACKGROUND")
+  dot:SetFrameLevel(0)  -- or 1, if 0 is not allowed in your context
   dot:SetWidth(100)
   dot:SetHeight(100)
 
@@ -766,6 +770,10 @@ local boss_markers = {}
 local elapsed_total = 0
 local was_disabled = false
 function crfFrame_OnUpdate()
+  elapsed_total = elapsed_total + arg1
+  if elapsed_total < 1 / updates_per_sec then return end -- 60 updates/s cap
+  elapsed_total = 0
+
   if not CRFDB.settings.enable then
     if not was_disabled then
       for i = 1, getn(DotPool) do
@@ -790,7 +798,6 @@ function crfFrame_OnUpdate()
       was_disabled = false
     end
   end
-  elapsed_total = elapsed_total + arg1
 
   local camera = this.camera_data
   this:UpdateCamera()
