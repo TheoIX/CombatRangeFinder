@@ -3,7 +3,7 @@
 ## Notes: Indicators for easing melee combat
 ## Author: Weird Vibes
 ## SavedVariablesPerCharacter: CRFDB
-## Version: 1.2.5
+## Version: 1.2.8
 # OptionalDeps: SuperAPI, pfUI
 
 CombatRangeFinder.lua

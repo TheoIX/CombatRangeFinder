@@ -44,6 +44,8 @@ local pairs              = pairs
 local ipairs             = ipairs
 local getn               = getn            -- For WoW 1.12, using getn is common
 
+local settings
+
 if not (has_vanillautils and has_superwow) then
   StaticPopupDialogs["NO_SWOW_VU"] = {
     text = "|cff77ff00Combat Range Finder|r requires the SuperWoW and VanillaUtils dlls to operate.",
@@ -417,9 +419,9 @@ local function ShowCommands()
   crf_print("|cff77ff00Combat Range Finder:|r")
   for _,data in ipairs(commands) do
     if type(data.default) == "boolean" then
-      crf_print(data.name .. " - " .. OffOn(CRFDB.settings[data.name]) .. " - " .. data.desc)
+      crf_print(data.name .. " - " .. OffOn(settings[data.name]) .. " - " .. data.desc)
     else
-      crf_print(data.name .. " - |cff00cccc" .. CRFDB.settings[data.name] .. "|r - " .. data.desc)
+      crf_print(data.name .. " - |cff00cccc" .. settings[data.name] .. "|r - " .. data.desc)
     end
   end
 end
@@ -436,10 +438,10 @@ function MakeSlash()
     for _,data in ipairs(commands) do
       if cmd == data.name then
         if type(data.default) == "boolean" then
-          CRFDB.settings[data.name] = not CRFDB.settings[data.name]
-          crf_print("|cff77ff00CRF:|r " .. data.name .. " - " .. OffOn(CRFDB.settings[data.name]))
+          settings[data.name] = not settings[data.name]
+          crf_print("|cff77ff00CRF:|r " .. data.name .. " - " .. OffOn(settings[data.name]))
         elseif num then
-          CRFDB.settings[data.name] = num
+          settings[data.name] = num
           crf_print("|cff77ff00CRF:|r " .. data.name .. " - |cff00cccc" .. num .. "|r")
         end
         return
@@ -455,8 +457,9 @@ function crfFrame:ADDON_LOADED(addon)
 
   CRFDB = CRFDB or {}
   CRFDB.settings = CRFDB.settings or {}
+  settings = CRFDB.settings
   for _,data in ipairs(commands) do
-    CRFDB.settings[data.name] = CRFDB.settings[data.name] or data.default
+    settings[data.name] = settings[data.name] or data.default
   end
   CRFDB.units = CRFDB.units or {}
 
@@ -560,11 +563,11 @@ function crfFrame:UpdateRaidMarkers()
   local minScale = 0.5   -- Minimum scale (50% of original size)
   for mark, marker in ipairs(self.raidMarkers) do
     local _,unit = UnitExists(mark_table[mark])
-    if unit and CRFDB.settings.markers and UnitIsVisible(unit) and not UnitIsDead(unit) then
+    if unit and settings.markers and UnitIsVisible(unit) and not UnitIsDead(unit) then
       local tx, ty, tz = UnitPosition(unit) -- Target position
       marker:SetPosition(tx, ty, tz)
-      marker.icon.original_width = CRFDB.settings.markerssize
-      marker.icon.original_height = CRFDB.settings.markerssize
+      marker.icon.original_width = settings.markerssize
+      marker.icon.original_height = settings.markerssize
 
       local distance = calculateDistance(px, py, pz, tx, ty, tz)
 
@@ -794,13 +797,43 @@ function crfFrame:UpdateCamera()
 end
 
 function crfFrame:ShowArrow()
-  
-  return CRFDB.settings.arrow
+  return settings.arrow
     and UnitExists("target")
     and UnitIsVisible("target")
-    and (CRFDB.settings.any or UnitCanAttack("player","target"))
+    and (settings.any or UnitCanAttack("player","target"))
     and not UnitIsDead("target")
 end
+
+local function NormalizeAngle(angle)
+  if angle < 0 then
+    return angle + 2 * pi
+  end
+  return angle
+end
+
+local function GetAngleBetweenPoints(x1, y1, x2, y2)
+  local angle = atan2(x2 - x1, y2 - y1)
+  return NormalizeAngle(angle), angle
+end
+
+local function IsUnitFacingUnit(playerX, playerY, playerFacing, targetX, targetY, maxAngle)
+  local angleToTarget = atan2(targetY - playerY, targetX - playerX)
+  if angleToTarget < 0 then
+    angleToTarget = angleToTarget + 2 * pi
+  end
+
+  local angularDifference = mod(angleToTarget - playerFacing, 2 * pi)
+  if angularDifference > pi then
+    angularDifference = angularDifference - 2 * pi
+  elseif angularDifference < -pi then
+    angularDifference = angularDifference + 2 * pi
+  end
+
+  return (abs(angularDifference) <= maxAngle), angularDifference
+end
+
+-- Precompute constant values outside the OnUpdate handler
+local CONSTANT_FACING_LIMIT = 61 * (pi / 180)  -- constant facing limit in radians
 
 local distance_change = 0
 local boss_markers = {}
@@ -811,9 +844,12 @@ function crfFrame_OnUpdate()
   if elapsed_total < 1 / updates_per_sec then return end -- 60 updates/s cap
   elapsed_total = 0
 
-  if not CRFDB.settings.enable then
+  local dotCount = getn(DotPool)
+  local settings = settings
+
+  if not settings.enable then
     if not was_disabled then
-      for i = 1, getn(DotPool) do
+      for i = 1, dotCount do
         local dot = DotPool[i]
         if dot.inUse then
           dot:Hide()
@@ -823,9 +859,9 @@ function crfFrame_OnUpdate()
       was_disabled = true
     end
     return
-  elseif CRFDB.settings.enable then
+  elseif settings.enable then
     if was_disabled then
-      for i = 1, getn(DotPool) do
+      for i = 1, dotCount do
         local dot = DotPool[i]
         if dot.inUse then
           dot:Show()
@@ -836,8 +872,9 @@ function crfFrame_OnUpdate()
     end
   end
 
-  local camera = this.camera_data
-  this:UpdateCamera()
+  local crf = this
+  local camera = crf.camera_data
+  crf:UpdateCamera()
 
   local px,py,pz = UnitPosition("player")
   playerdot1:SetPosition(px,py,pz)
@@ -850,159 +887,96 @@ function crfFrame_OnUpdate()
 
   -- local cx,cy,cz = CameraPosition()
 
-  crfFrame:UpdateRaidMarkers()
+  crf:UpdateRaidMarkers()
   -- crfFrame:UpdateBossMarkers()
 
-  for i = 1, getn(DotPool) do
+  -- Cache camera values into locals
+  local camX, camY, camZ = camera.x, camera.y, camera.z
+  local cosYaw, sinYaw = camera.cosYaw, camera.sinYaw
+  local cosPitch, sinPitch = camera.cosPitch, camera.sinPitch
+
+  for i = 1, dotCount do
     local dot = DotPool[i]
     if dot.inUse then
-      -- print("dot "..i.." "..dot.x)
-      -- Calculate relative position from camera to target point
-      local relX = dot.x - camera.x
-      local relY = dot.y - camera.y
-      local relZ = dot.z - camera.z
+      local relX = dot.x - camX
+      local relY = dot.y - camY
+      local relZ = dot.z - camZ
 
-      -- Step 1: Apply yaw rotation around the Z-axis (affecting X and Y based on camera's yaw)
-      local yAfterYaw = -(camera.cosYaw * relX - camera.sinYaw * relY)  -- Rotate X and Y using cameraYaw
-      local xAfterYaw = (camera.sinYaw * relX + camera.cosYaw * relY)  -- Rotate X and Y using cameraYaw
-      local zAfterYaw = relZ  -- Z remains unaffected by yaw rotation
+      -- Yaw rotation
+      local yAfterYaw = -(cosYaw * relX - sinYaw * relY)
+      local xAfterYaw = (sinYaw * relX + cosYaw * relY)
+      local zAfterYaw = relZ
 
-      -- Step 2: Apply pitch rotation around the X-axis (affecting Y and Z based on camera's pitch)
-      local finalY = (camera.cosPitch * yAfterYaw - camera.sinPitch * zAfterYaw)  -- Depth (into screen)
-      local finalZ = (camera.sinPitch * yAfterYaw + camera.cosPitch * zAfterYaw)  -- Vertical
+      -- Pitch rotation
+      local finalY = (cosPitch * yAfterYaw - sinPitch * zAfterYaw)
+      local finalZ = (sinPitch * yAfterYaw + cosPitch * zAfterYaw)
       local finalX = xAfterYaw
 
       if finalY < 0 then
         dot:Hide()
       else
         dot:Show()
-        -- Step 3: Normalize the finalX and finalZ based on depth (finalY)
         local normX = finalX / finalY
         local normZ = finalZ / finalY
 
-        -- Convert normalized coordinates to screen coordinates
         local screenX = (normX / fovScale) * (screenWidth / 2)
-        local screenY = (normZ * aspectRatio) / fovScale  * (screenHeight / 2)
+        local screenY = (normZ * aspectRatio) / fovScale * (screenHeight / 2)
 
-        -- Apply UI scaling and center the coordinates
-        -- TODO adjust?
-        local pixelX = screenX -- * uiScale
-        local pixelY = screenY -- * uiScale
-
-        -- Place the dot texture relative to the center of the screen
-        dot:SetPoint("CENTER", UIParent, "CENTER", pixelX, pixelY)
-        -- local distance = sqrt(finalX ^ 2 + finalY ^ 2 + finalZ ^ 2)
-        dot.screenX = pixelX
-        dot.screenY = pixelY
+        dot:SetPoint("CENTER", UIParent, "CENTER", screenX, screenY)
+        dot.screenX = screenX
+        dot.screenY = screenY
       end
     end
   end
 
-  -- this uses screen co-ords so it happens after the dot update above
-  do
-    local function NormalizeAngle(angle)
-      if angle < 0 then
-          return angle + 2 * pi
+  -- Arrow update block using cached values
+  if crf:ShowArrow() and tx then
+    local obj_distance = calculateDistance(px, py, pz, tx, ty, tz)
+    local player_facing = UnitFacing("player")
+    local target_facing = UnitFacing("target")
+
+    local is_facing = player_facing and IsUnitFacingUnit(px, py, player_facing, tx, ty, CONSTANT_FACING_LIMIT)
+    local is_behind = target_facing and not IsUnitFacingUnit(tx, ty, target_facing, px, py, pi / 2)
+
+    local _, _, _, pxPoint, pyPoint = playerdot1:GetPoint()
+    local _, _, _, txPoint, tyPoint = targetdot1:GetPoint()
+    local dx = txPoint - pxPoint
+    local dy = tyPoint - pyPoint
+    local distance = sqrt(dx * dx + dy * dy)
+    local midX = (pxPoint + txPoint) / 2
+    local midY = (pyPoint + tyPoint) / 2
+
+    playerdot1.icon:SetWidth(distance)
+    playerdot1.icon:SetHeight(distance)
+
+    local angle1 = GetAngleBetweenPoints(pxPoint, pyPoint, txPoint, tyPoint) + (pi / 2)
+    RotateTexture(playerdot1.icon, angle1)
+
+    local alpha = (obj_distance < 30) and 1 or ((obj_distance > 50) and 0 or (1 - ((obj_distance - 25) / (50 - 25))))
+
+    if IsInRange(obj_distance) then
+      if settings.largearrow and playerdot1.icon:GetTexture() ~= textures.in_range then
+        playerdot1.icon:SetTexture(textures.in_range)
       end
-      return angle
-    end
-    local function GetAngleBetweenPoints(x1, y1, x2, y2)
-      -- Calculate the angle between two points in radians
-      -- local angle = atan2(y2 - y1, x2 - x1)
-      local angle = atan2(x2 - x1, y2 - y1)
-      -- return angle
-      return NormalizeAngle(angle),angle -- Ensure the angle is in 0 to 2*pi
-    end
-
-    function IsUnitFacingUnit(playerX, playerY, playerFacing, targetX, targetY, maxAngle)
-      -- 1. Calculate the angle to the target
-      local angleToTarget = atan2(targetY - playerY, targetX - playerX)
-
-      -- 2. Normalize both angles to 0..2*pi
-      if angleToTarget < 0 then
-        angleToTarget = angleToTarget + 2 * pi
-      end
-
-      -- 3. Calculate the angular difference and normalize it to [-pi, pi]
-      local angularDifference = mod(angleToTarget - playerFacing, 2 * pi)
-      if angularDifference > pi then
-        angularDifference = angularDifference - 2 * pi
-      elseif angularDifference < -pi then
-        angularDifference = angularDifference + 2 * pi
-      end
-
-      -- 4. Check if the player is facing the target within the maxAngle range
-      return (abs(angularDifference) <= maxAngle),angularDifference
-    end
-  
-    if crfFrame:ShowArrow() then
-      -- local px, py = UnitPosition("player") -- or UnitPosition("player")
-      -- local tx, ty = UnitPosition("target")
-      
-      local obj_distance = calculateDistance(px,py,pz,tx,ty,tz)
-      local facing_limit = 61 * (pi/180) -- 60 degrees
-
-      local player_facing = UnitFacing("player") -- or UnitFacing("player")
-      local target_facing = UnitFacing("target")
-
-      -- is player facing unit within 61 degrees
-      local is_facing = player_facing and IsUnitFacingUnit(px, py, player_facing, tx, ty, facing_limit)
-      -- is unit facing player with 180 degrees
-      local is_behind = target_facing and not IsUnitFacingUnit(tx, ty, target_facing, px, py, pi/2)
-
-      local a,b,c,px,py = playerdot1:GetPoint()
-      local _,_,_,tx,ty = targetdot1:GetPoint()
-      local dx = tx - px
-      local dy = ty - py
-
-      local distance = sqrt(dx * dx + dy * dy)
-      local midX, midY = (px + tx) / 2, (py + ty) / 2
-
-      -- playerdot1.icon:SetTexture("Interface\\Addons\\CombatRangeFinder\\line.tga")
-      playerdot1.icon:SetWidth(distance)
-      playerdot1.icon:SetHeight(distance)
-
-      local angle1 = GetAngleBetweenPoints(px,py,tx,ty) + (pi/2) 
-      RotateTexture(playerdot1.icon, angle1)
-
-      local alpha
-
-      if obj_distance < 30 then
-        alpha = 1 -- Fully visible below 50 yards
-      elseif obj_distance > 50 then
-        alpha = 0 -- Fully invisible above 80 yards
+      if not is_facing then
+        playerdot1.icon:SetVertexColor(1, 0.5, 0, alpha)
+      elseif is_behind then
+        playerdot1.icon:SetVertexColor(0.25, 0.75, 0.65, alpha)
       else
-        -- Linearly interpolate between 1 (at 50 yards) and 0 (at 80 yards)
-        alpha = 1 - ((obj_distance - 25) / (50 - 25))
+        playerdot1.icon:SetVertexColor(0.1, 0.85, 0.15, alpha)
       end
-
-      -- colors
-      if IsInRange(obj_distance) then
-        if CRFDB.settings.largearrow and playerdot1.icon:GetTexture() ~= textures.in_range then
-          -- texture swapping is heavy, might just wanna load both and toggle visibility
-          playerdot1.icon:SetTexture(textures.in_range)
-        end
-
-        if not is_facing then
-          playerdot1.icon:SetVertexColor(1,0.5,0,alpha)
-        elseif is_behind then
-          playerdot1.icon:SetVertexColor(0.25,0.75,0.65,alpha)
-        else
-          playerdot1.icon:SetVertexColor(0.1,0.85,0.15,alpha)
-        end
-      else
-        playerdot1.icon:SetVertexColor(0.95,0.1,0.1,alpha)
-        if playerdot1.icon:GetTexture() ~= textures.out_range then
-          playerdot1.icon:SetTexture(textures.out_range)
-        end
-      end
-        
-      playerdot1.icon:SetPoint("CENTER",UIParent,"CENTER",midX,midY)
-      playerdot1.icon:Show()
     else
-      targetdot1.icon:Hide()
-      playerdot1.icon:Hide()
+      playerdot1.icon:SetVertexColor(0.95, 0.1, 0.1, alpha)
+      if playerdot1.icon:GetTexture() ~= textures.out_range then
+        playerdot1.icon:SetTexture(textures.out_range)
+      end
     end
+
+    playerdot1.icon:SetPoint("CENTER", UIParent, "CENTER", midX, midY)
+    playerdot1.icon:Show()
+  else
+    targetdot1.icon:Hide()
+    playerdot1.icon:Hide()
   end
 end
 
