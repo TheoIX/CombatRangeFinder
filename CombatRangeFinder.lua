@@ -7,6 +7,43 @@ local has_superwow = SetAutoloot and true or false
 
 local updates_per_sec = 60
 
+-- Cache global functions and constants for efficiency
+
+-- Math library caching
+local math               = math
+local cos                = math.cos
+local sin                = math.sin
+local sqrt               = math.sqrt
+local atan2              = math.atan2
+local mod                = math.mod
+local pi                 = math.pi
+local abs                = math.abs
+local tan                = math.tan
+local floor              = math.floor
+
+-- WoW API functions frequently used in loops or OnUpdate handlers
+local UnitXP             = UnitXP
+local GetTime            = GetTime
+local GetScreenWidth     = GetScreenWidth
+local GetScreenHeight    = GetScreenHeight
+local UnitName           = UnitName
+local SpellInfo          = SpellInfo
+local GetActionText      = GetActionText
+local IsActionInRange    = IsActionInRange
+local UnitExists         = UnitExists
+local UnitIsVisible      = UnitIsVisible
+local UnitIsDead         = UnitIsDead
+local UnitCanAssist      = UnitCanAssist
+local UnitClassification = UnitClassification
+local UnitIsPlayer       = UnitIsPlayer
+local UnitCanAttack      = UnitCanAttack
+local UnitRace           = UnitRace
+
+-- Table and string library functions
+local pairs              = pairs
+local ipairs             = ipairs
+local getn               = getn            -- For WoW 1.12, using getn is common
+
 if not (has_vanillautils and has_superwow) then
   StaticPopupDialogs["NO_SWOW_VU"] = {
     text = "|cff77ff00Combat Range Finder|r requires the SuperWoW and VanillaUtils dlls to operate.",
@@ -31,8 +68,8 @@ crfFrame:SetAllPoints(UIParent)  -- Covers the entire screen
 
 function RotateTexture(texture, angle)
   -- Calculate sine and cosine of the angle
-  local cosTheta = math.cos(angle)
-  local sinTheta = math.sin(angle)
+  local cosTheta = cos(angle)
+  local sinTheta = sin(angle)
 
   -- SetTexCoord parameters for rotation
   texture:SetTexCoord(
@@ -68,8 +105,8 @@ end
 
 function TransformTexture(texture, angle, scaleX, scaleY)
   -- Precompute sine and cosine of the angle
-  local cosTheta = math.cos(angle)
-  local sinTheta = math.sin(angle)
+  local cosTheta = cos(angle)
+  local sinTheta = sin(angle)
 
   -- scaleX = 1 / scaleX
   -- scaleY = 1 / scaleY
@@ -113,36 +150,36 @@ end
 
 function calculateDistance(x1,y1,z1,x2,y2,z2)
   if (type(x1) == "table") and (type(y1) == "table") then
-    return math.sqrt((x1.x - y1.x)^2 + (x1.y - y1.y)^2 + (x1.z - y1.z)^2)
+    return sqrt((x1.x - y1.x)^2 + (x1.y - y1.y)^2 + (x1.z - y1.z)^2)
   else
-    return math.sqrt((x2 - x1)^2 + (y2 - y1)^2 + (z2 - z1)^2)
+    return sqrt((x2 - x1)^2 + (y2 - y1)^2 + (z2 - z1)^2)
   end
 end
 
 -- not neccesarily player first, just easy convention
 function IsUnitFacingUnit(playerX, playerY, playerFacing, targetX, targetY, maxAngle)
   -- 1. Calculate the angle to the target
-  local angleToTarget = math.atan2(targetY - playerY, targetX - playerX)
+  local angleToTarget = atan2(targetY - playerY, targetX - playerX)
 
   -- 2. Normalize both angles to 0..2*pi
   if angleToTarget < 0 then
-    angleToTarget = angleToTarget + 2 * math.pi
+    angleToTarget = angleToTarget + 2 * pi
   end
 
   -- 3. Calculate the angular difference and normalize it to [-pi, pi]
-  local angularDifference = math.mod(angleToTarget - playerFacing, 2 * math.pi)
-  if angularDifference > math.pi then
-    angularDifference = angularDifference - 2 * math.pi
-  elseif angularDifference < -math.pi then
-    angularDifference = angularDifference + 2 * math.pi
+  local angularDifference = mod(angleToTarget - playerFacing, 2 * pi)
+  if angularDifference > pi then
+    angularDifference = angularDifference - 2 * pi
+  elseif angularDifference < -pi then
+    angularDifference = angularDifference + 2 * pi
   end
 
   -- 4. Check if the player is facing the target within the maxAngle range
-  return (math.abs(angularDifference) <= maxAngle),angularDifference
+  return (abs(angularDifference) <= maxAngle),angularDifference
 end
 
 local function round_to(z,x)
-  return math.floor(x * z) / z
+  return floor(x * z) / z
 end
 
 -- Create a pool for managing dots
@@ -484,8 +521,8 @@ end
 function SetRaidMarkerTexture(texture, markerIndex)
   texture:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
   local rows, cols = 4, 4  -- 4x4 grid
-  local row = math.floor((markerIndex - 1) / cols)
-  local col = math.mod(markerIndex - 1, cols)
+  local row = floor((markerIndex - 1) / cols)
+  local col = mod(markerIndex - 1, cols)
   local left = col / cols
   local right = (col + 1) / cols
   local top = row / rows
@@ -535,7 +572,7 @@ function crfFrame:UpdateRaidMarkers()
       local scale = 1
       if distance > minDistance then
         scale = 1 - ((distance - minDistance) / (maxDistance - minDistance)) * (1 - minScale)
-        scale = math.max(minScale, scale) -- Clamp to minScale
+        scale = max(minScale, scale) -- Clamp to minScale
       end
 
       -- Apply the scaled size
@@ -583,7 +620,7 @@ function crfFrame:UpdateBossMarkers()
         local scale = 1
         if distance > minDistance then
           scale = 1 - ((distance - minDistance) / (maxDistance - minDistance)) * (1 - minScale)
-          scale = math.max(minScale, scale) -- Clamp to minScale
+          scale = max(minScale, scale) -- Clamp to minScale
         end
 
         -- Apply the scaled size
@@ -681,8 +718,8 @@ end
 
 local c_fov = UnitXP("cameraFoV")
 FOV = ScaleFOV(c_fov)
-fovScale = math.tan(FOV / 2)
--- fovScale = math.tan(ScaleFOV(2) / 2)
+fovScale = tan(FOV / 2)
+-- fovScale = tan(ScaleFOV(2) / 2)
 -- print(format("%.2f _ %.2f _ %.2f _ %.2f _ %.2f",ScaleFOV(0.2),ScaleFOV(1),ScaleFOV(2),ScaleFOV(3),ScaleFOV(3.14)))
 
 -- Projection parameters
@@ -729,7 +766,7 @@ end
 local function calculateYaw(x1, y1, x2, y2)
   local deltaX = x2 - x1
   local deltaY = y2 - y1
-  return math.atan2(deltaY, deltaX)
+  return atan2(deltaY, deltaX)
 end
 
 function crfFrame:UpdateCamera()
@@ -747,13 +784,13 @@ function crfFrame:UpdateCamera()
   -- Only update yaw if it's actually changed. Accounts for some odd motion glitches
   local deltaThreshold = 0.04
 
-  camera.yaw = -math.atan2(camera.y - py, camera.x - px)
+  camera.yaw = -atan2(camera.y - py, camera.x - px)
 
-  camera.sinYaw = math.sin(camera.yaw)
-  camera.cosYaw = math.cos(camera.yaw)
+  camera.sinYaw = sin(camera.yaw)
+  camera.cosYaw = cos(camera.yaw)
 
   camera.sinPitch = -UnitXP("cameraPitch")
-  camera.cosPitch = math.sqrt(1 - camera.sinPitch^2)
+  camera.cosPitch = sqrt(1 - camera.sinPitch^2)
 end
 
 function crfFrame:ShowArrow()
@@ -854,7 +891,7 @@ function crfFrame_OnUpdate()
 
         -- Place the dot texture relative to the center of the screen
         dot:SetPoint("CENTER", UIParent, "CENTER", pixelX, pixelY)
-        -- local distance = math.sqrt(finalX ^ 2 + finalY ^ 2 + finalZ ^ 2)
+        -- local distance = sqrt(finalX ^ 2 + finalY ^ 2 + finalZ ^ 2)
         dot.screenX = pixelX
         dot.screenY = pixelY
       end
@@ -865,37 +902,37 @@ function crfFrame_OnUpdate()
   do
     local function NormalizeAngle(angle)
       if angle < 0 then
-          return angle + 2 * math.pi
+          return angle + 2 * pi
       end
       return angle
     end
     local function GetAngleBetweenPoints(x1, y1, x2, y2)
       -- Calculate the angle between two points in radians
-      -- local angle = math.atan2(y2 - y1, x2 - x1)
-      local angle = math.atan2(x2 - x1, y2 - y1)
+      -- local angle = atan2(y2 - y1, x2 - x1)
+      local angle = atan2(x2 - x1, y2 - y1)
       -- return angle
       return NormalizeAngle(angle),angle -- Ensure the angle is in 0 to 2*pi
     end
 
     function IsUnitFacingUnit(playerX, playerY, playerFacing, targetX, targetY, maxAngle)
       -- 1. Calculate the angle to the target
-      local angleToTarget = math.atan2(targetY - playerY, targetX - playerX)
+      local angleToTarget = atan2(targetY - playerY, targetX - playerX)
 
       -- 2. Normalize both angles to 0..2*pi
       if angleToTarget < 0 then
-        angleToTarget = angleToTarget + 2 * math.pi
+        angleToTarget = angleToTarget + 2 * pi
       end
 
       -- 3. Calculate the angular difference and normalize it to [-pi, pi]
-      local angularDifference = math.mod(angleToTarget - playerFacing, 2 * math.pi)
-      if angularDifference > math.pi then
-        angularDifference = angularDifference - 2 * math.pi
-      elseif angularDifference < -math.pi then
-        angularDifference = angularDifference + 2 * math.pi
+      local angularDifference = mod(angleToTarget - playerFacing, 2 * pi)
+      if angularDifference > pi then
+        angularDifference = angularDifference - 2 * pi
+      elseif angularDifference < -pi then
+        angularDifference = angularDifference + 2 * pi
       end
 
       -- 4. Check if the player is facing the target within the maxAngle range
-      return (math.abs(angularDifference) <= maxAngle),angularDifference
+      return (abs(angularDifference) <= maxAngle),angularDifference
     end
   
     if crfFrame:ShowArrow() then
@@ -903,7 +940,7 @@ function crfFrame_OnUpdate()
       -- local tx, ty = UnitPosition("target")
       
       local obj_distance = calculateDistance(px,py,pz,tx,ty,tz)
-      local facing_limit = 61 * (math.pi/180) -- 60 degrees
+      local facing_limit = 61 * (pi/180) -- 60 degrees
 
       local player_facing = UnitFacing("player") -- or UnitFacing("player")
       local target_facing = UnitFacing("target")
@@ -911,21 +948,21 @@ function crfFrame_OnUpdate()
       -- is player facing unit within 61 degrees
       local is_facing = player_facing and IsUnitFacingUnit(px, py, player_facing, tx, ty, facing_limit)
       -- is unit facing player with 180 degrees
-      local is_behind = target_facing and not IsUnitFacingUnit(tx, ty, target_facing, px, py, math.pi/2)
+      local is_behind = target_facing and not IsUnitFacingUnit(tx, ty, target_facing, px, py, pi/2)
 
       local a,b,c,px,py = playerdot1:GetPoint()
       local _,_,_,tx,ty = targetdot1:GetPoint()
       local dx = tx - px
       local dy = ty - py
 
-      local distance = math.sqrt(dx * dx + dy * dy)
+      local distance = sqrt(dx * dx + dy * dy)
       local midX, midY = (px + tx) / 2, (py + ty) / 2
 
       -- playerdot1.icon:SetTexture("Interface\\Addons\\CombatRangeFinder\\line.tga")
       playerdot1.icon:SetWidth(distance)
       playerdot1.icon:SetHeight(distance)
 
-      local angle1 = GetAngleBetweenPoints(px,py,tx,ty) + (math.pi/2) 
+      local angle1 = GetAngleBetweenPoints(px,py,tx,ty) + (pi/2) 
       RotateTexture(playerdot1.icon, angle1)
 
       local alpha

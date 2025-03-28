@@ -1,4 +1,4 @@
-# Combat Range Finder 1.2.1
+# Combat Range Finder 1.2.5
 Indicators for easing melee combat
 ---
 Requires [SuperWoW.dll](https://github.com/balakethelock/SuperWoW) and `VanillaUtils.dll`  
