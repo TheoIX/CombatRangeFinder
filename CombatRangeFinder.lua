@@ -981,3 +981,37 @@ function crfFrame_OnUpdate()
 end
 
 crfFrame:SetScript("OnUpdate",crfFrame_OnUpdate)
+
+-- === Public API for other addons (TheoMode) ==============================
+CRF = CRF or {}
+
+-- Accept both GREEN and TEAL as "OK to swing":
+--  * GREEN  = in melee range + you're facing the target + target facing window OK
+--  * TEAL   = in melee range + you're facing the target + target facing window ignored
+-- We implement "green OR teal" by requiring only: inRange + YOUR facing OK.
+function CRF:IsTargetMeleeGreenOrTeal()
+  if not UnitExists("target")
+     or not UnitCanAttack("player","target")
+     or UnitIsDead("target")
+     or not UnitIsVisible("target") then
+    return false
+  end
+
+  -- positions come from SuperWoW/VanillaUtils (this addon already checks for them)
+  local px,py,pz = UnitPosition("player")
+  local tx,ty,tz = UnitPosition("target")
+  if not px or not tx then return false end
+
+  local obj_distance = calculateDistance(px,py,pz,tx,ty,tz)
+  local inRange = IsInRange(obj_distance)
+
+  -- Your facing relative to the target (CRF already defines CONSTANT_FACING_LIMIT and IsUnitFacingUnit)
+  local pf = UnitFacing("player")
+  local facingOK = false
+  if pf then
+    facingOK = IsUnitFacingUnit(px, py, pf, tx, ty, CONSTANT_FACING_LIMIT)
+  end
+
+  -- Treat as OK when arrow would be GREEN or TEAL
+  return inRange and facingOK
+end
