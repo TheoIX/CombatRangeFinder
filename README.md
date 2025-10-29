@@ -25,3 +25,4 @@ Options `/crf` :
 
 ___
 * Made by and for Weird Vibes of Turtle Wow  
+* Theo addons integration for self use
